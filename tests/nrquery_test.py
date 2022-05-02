@@ -1,12 +1,12 @@
 """Tests for sample"""
 import pytest
 
-import module_example
+import nrquery
 
 
 def test_main() -> None:
     """Main test"""
-    assert module_example.main()
+    assert nrquery.main()
 
 
 @pytest.mark.parametrize(
@@ -18,4 +18,4 @@ def test_main() -> None:
     ),
 )
 def test_squared(value_in: int, expected: int) -> None:
-    assert module_example.squared(value_in) == expected
+    assert nrquery.squared(value_in) == expected
