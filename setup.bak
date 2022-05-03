@@ -22,6 +22,7 @@ classifiers =
 py_modules = nrquery
 python_requires = >=3.8
 
+
 [coverage:run]
 branch = True
 source = tests

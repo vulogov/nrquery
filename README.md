@@ -7,31 +7,12 @@
 [![Python package](https://github.com/vulogov/nrquery/actions/workflows/python-tests.yml/badge.svg?branch=main)](https://github.com/vulogov/nrquery/actions/workflows/python-tests.yml)
 [![codecov](https://codecov.io/gh/vulogov/nrquery/branch/main/graph/badge.svg?token=YCYBT8TA13)](https://codecov.io/gh/vulogov/nrquery)
 
-[Project description here]
+Query interface for the telemetry from New Relic SaaS platform.
 
 ## Requirements
 
 - [Python](https://python.org) >= 3.8
 
-## Internal Links
+## Description
 
-- [Development Installation Guide](docs/development.md)
-- [Repo documentation](docs/)
-
----
-
-## A template for my non-library style boilerplate.
-
-Straight forward to use!
-
-### Single module projects
-
-- Rename `module_example.py` as desired
-- Update `py_modules = module_example` in `setup.cfg` with name
-- Update requirements.in as needed
-- Run `make update` to populate requirements.txt
-
-### Multi file module projects
-
-- All the steps above
-- `py_modules = module_example` becomes a multi-line config with each module name
+This module, designed to be used ether from Jypyter or from application providing you a query  access to your data stored in New Relic platform, so you can perform custom analysis.
