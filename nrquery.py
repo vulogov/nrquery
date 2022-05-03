@@ -3,6 +3,7 @@
 import os
 import json
 import requests
+import pandas as pd
 from typing import Any
 
 GQLAPI = "https://api.newrelic.com/graphql"
@@ -66,3 +67,19 @@ class Result:
         if self.IsSuccess:
             return self.Value.json()["data"]["actor"]["account"]["nrql"]["results"]
         raise NRResultError("Query: %s returned failure" % self.Query)
+
+    def Series(self) -> Any:
+        v = self.Json()
+        if self.IsSuccess and len(v) == 1 and isinstance(v[0], dict):
+            return pd.Series(v[0], name=self.Query)
+        raise NRResultError("Query: %s returned failure" % self.Query)
+
+    def Dataframe(self) -> Any:
+        v = self.Json()
+        if self.IsSuccess and len(v) > 0 and isinstance(v[0], dict):
+            return pd.DataFrame(v)
+        raise NRResultError("Query: %s returned failure" % self.Query)
+
+    def CSV(self) -> str:
+        df = self.Dataframe()
+        return df.to_csv()
