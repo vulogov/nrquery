@@ -11,7 +11,9 @@ charset-normalizer==2.0.12
 idna==3.3
     # via requests
 numpy==1.22.3
-    # via pandas
+    # via
+    #   -r requirements.in
+    #   pandas
 pandas==1.4.2
     # via -r requirements.in
 python-dateutil==2.8.2

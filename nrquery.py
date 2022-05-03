@@ -77,8 +77,22 @@ class Result:
     def Dataframe(self) -> Any:
         v = self.Json()
         if self.IsSuccess and len(v) > 0 and isinstance(v[0], dict):
-            return pd.DataFrame(v)
+            res = pd.DataFrame(v)
+            if "timestamp" in res:
+                res["datetime"] = pd.to_datetime(res["timestamp"], unit="ms")
+            if "beginTimeSeconds" in res:
+                res["beginDateTime"] = pd.to_datetime(res["beginTimeSeconds"], unit="s")
+            if "endTimeSeconds" in res:
+                res["endDateTime"] = pd.to_datetime(res["endTimeSeconds"], unit="s")
+            return res
         raise NRResultError("Query: %s returned failure" % self.Query)
+
+    def Numpy(self) -> dict:
+        res = {}
+        df = self.Dataframe()
+        for c in df:
+            res[c] = df[c].to_numpy()
+        return res
 
     def CSV(self) -> str:
         df = self.Dataframe()
