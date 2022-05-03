@@ -87,6 +87,13 @@ class Result:
             return res
         raise NRResultError("Query: %s returned failure" % self.Query)
 
+    def Numpy(self) -> dict:
+        res = {}
+        df = self.Dataframe()
+        for c in df:
+            res[c] = df[c].to_numpy()
+        return res
+
     def CSV(self) -> str:
         df = self.Dataframe()
         return df.to_csv()
