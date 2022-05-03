@@ -77,7 +77,9 @@ class Result:
     def Dataframe(self) -> Any:
         v = self.Json()
         if self.IsSuccess and len(v) > 0 and isinstance(v[0], dict):
-            return pd.DataFrame(v)
+            res = pd.DataFrame(v)
+            res["datetime"] = pd.to_datetime(res["timestamp"], unit="ms")
+            return res
         raise NRResultError("Query: %s returned failure" % self.Query)
 
     def CSV(self) -> str:

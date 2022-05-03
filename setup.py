@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
     name="nrquery",
-    version="1.1.2",
+    version="1.3",
     author="Vladimir Ulogov",
     author_email="vladimir.ulogov@me.com",
     url="https://github.com/vulogov/nrquery",
