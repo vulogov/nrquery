@@ -77,7 +77,24 @@ class Result:
     def Dataframe(self) -> Any:
         v = self.Json()
         if self.IsSuccess and len(v) > 0 and isinstance(v[0], dict):
-            res = pd.DataFrame(v)
+            if "timestamp" in v[0]:
+                ix = []
+                for e in v:
+                    if "timestamp" in e:
+                        ix.append(pd.to_datetime(e["timestamp"], unit="ms"))
+                    else:
+                        ix.append(None)
+                res = pd.DataFrame(v, index=ix)
+            if "beginTimeSeconds" in v[0] and "endTimeSeconds" in v[0]:
+                ix = []
+                for e in v:
+                    if "beginTimeSeconds" in e and "endTimeSeconds" in e:
+                        ix.append(pd.to_datetime(e["beginTimeSeconds"], unit="s"))
+                    else:
+                        ix.append(None)
+                res = pd.DataFrame(v, index=ix)
+            else:
+                res = pd.DataFrame(v)
             if "timestamp" in res:
                 res["datetime"] = pd.to_datetime(res["timestamp"], unit="ms")
             if "beginTimeSeconds" in res:
