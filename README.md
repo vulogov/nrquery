@@ -68,6 +68,7 @@ Following methods can be used to extract the value of the query. You must undest
 * nrquery.Result.Series - will convert result into a single Pandas series object
 * nrquery.Result.Dataframe - will convert result into a Pandas Dataframe object
 * nrquery.Result.CSV - will convert result into a CSV string.
+* nrqauery.Result.Numpy - will convert result into a dictionary of numpy arrays
 
 ```python
 import nrquery
