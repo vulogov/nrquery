@@ -64,8 +64,11 @@ class Result:
         self.Elapsed = self.Value.elapsed
 
     def Json(self) -> Any:
-        if self.IsSuccess:
-            return self.Value.json()["data"]["actor"]["account"]["nrql"]["results"]
+        try:
+            if self.IsSuccess:
+                return self.Value.json()["data"]["actor"]["account"]["nrql"]["results"]
+        except KeyError:
+            raise NRResultError("Query: %s returned no useful result" % self.Query)
         raise NRResultError("Query: %s returned failure" % self.Query)
 
     def Series(self) -> Any:
