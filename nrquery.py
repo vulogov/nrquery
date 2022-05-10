@@ -4,6 +4,7 @@ import os
 import json
 import requests
 import datetime
+import dateparser
 import pandas as pd
 from typing import Any
 
@@ -18,6 +19,30 @@ QTPL = """
          }
       }
    }
+}
+"""
+
+Q = """
+{
+   actor {
+      account(id: %s) {
+         %s
+      }
+   }
+}
+"""
+
+DEADNODESTPL = """
+{
+    actor {
+        entitySearch(query: "reporting is false and lastReportingChangeAt > %d") {
+          results {
+            entities {
+              name
+            }
+          }
+        }
+    }
 }
 """
 
@@ -40,6 +65,16 @@ def get_env_data(name: str, val: Any) -> Any:
     if name in os.environ.keys():
         return os.environ.get(name)
     raise NREnvError("Error getting value for %s" % name)
+
+
+def np_normalize(arr, t_min, t_max):
+    norm_arr = []
+    diff = t_max - t_min
+    diff_arr = max(arr) - min(arr)
+    for i in arr:
+        temp = (((i - min(arr)) * diff) / diff_arr) + t_min
+        norm_arr.append(temp)
+    return norm_arr
 
 
 class Query:
@@ -79,6 +114,21 @@ class Query:
         if not res.IsSuccess:
             raise NRResultError("Query: %s not succesfull" % query)
         return res
+
+    def ExecuteRaw(self, query: str) -> Any:
+        hdr = {"Content-Type": "application/json", "API-Key": self.NRAPIKEY}
+        data = json.dumps({"query": query})
+        r = requests.post(GQLAPI, data=data, headers=hdr)
+        res = Result(self, query, r)
+        if not res.IsSuccess:
+            raise NRResultError("Query: %s not succesfull" % query)
+        return res
+
+    def Deadnodes(self, query="1 day ago"):
+        ts = dateparser.parse(query)
+        tsms = ts.timestamp() * 1000
+        DNQ = DEADNODESTPL % tsms
+        return self.ExecuteRaw(DNQ)
 
 
 class ResultList:
@@ -141,6 +191,16 @@ class Result:
             self.IsSuccess = False
         self.Elapsed = self.Value.elapsed
 
+    def Deadnodes(self) -> Any:
+        try:
+            if self.IsSuccess:
+                return self.Value.json()["data"]["actor"]["entitySearch"]["results"][
+                    "entities"
+                ]
+        except KeyError:
+            raise NRResultError("Query: %s returned no useful result" % self.Query)
+        raise NRResultError("Query: %s returned failure" % self.Query)
+
     def Json(self) -> Any:
         try:
             if self.IsSuccess:
@@ -195,3 +255,12 @@ class Result:
     def CSV(self) -> str:
         df = self.Dataframe()
         return df.to_csv()
+
+    def Model(self) -> Any:
+        return Model(self)
+
+
+class Model:
+    def __init__(self, res):
+        self.Value = res
+        self.Df = res.Dataframe()
