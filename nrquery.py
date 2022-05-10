@@ -38,11 +38,27 @@ DEADNODESTPL = """
         entitySearch(query: "reporting is false and lastReportingChangeAt > %d") {
           results {
             entities {
-              name
+              name,
+              guid
             }
           }
         }
     }
+}
+"""
+
+ALQ = """
+{
+  actor {
+    entitySearch(query: "alertable is true") {
+      results {
+        entities {
+          name,
+          guid
+        }
+      }
+    }
+  }
 }
 """
 
@@ -130,6 +146,9 @@ class Query:
         DNQ = DEADNODESTPL % tsms
         return self.ExecuteRaw(DNQ)
 
+    def Alertable(self):
+        return self.ExecuteRaw(ALQ)
+
 
 class ResultList:
     def __init__(self, qinst: Query, value: list):
@@ -192,6 +211,12 @@ class Result:
         self.Elapsed = self.Value.elapsed
 
     def Deadnodes(self) -> Any:
+        return self.Results()
+
+    def Alertable(self) -> Any:
+        return self.Results()
+
+    def Results(self) -> Any:
         try:
             if self.IsSuccess:
                 return self.Value.json()["data"]["actor"]["entitySearch"]["results"][

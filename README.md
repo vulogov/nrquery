@@ -78,6 +78,17 @@ res = q.Deadnodes("1 hour ago")
 ```
 This request will return result with list of the nodes stop sending data 1 hour ago.
 
+### Get the list of alertable nodes.
+
+nrquery.Query.Alertable() is a special method that will return the list of the nodes that is in Alertable state
+
+```python
+import nrquery
+
+q = nrquery.Query()
+res = q.Alertable()
+```
+
 ## Result class
 
 You shall not directly create instances of the nrquery.Result class. Method Run of the class nrquery.Query will return an instance of the Result class. There are few class variables that can pose some interest:
@@ -104,3 +115,7 @@ df = res.Dataframe()
 ### nrquery.Result.Deadnodes
 
 This merhod returns the list of nodes that been prepared by nrquery.Query.Deadnodes
+
+### nrquery.Result.Alertable
+
+This method will return the list of the nodes prepared by nrquery.Query.Alertable
