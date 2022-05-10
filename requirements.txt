@@ -8,25 +8,51 @@ certifi==2021.10.8
     # via requests
 charset-normalizer==2.0.12
     # via requests
+dateparser==1.1.1
+    # via -r requirements.in
 idna==3.3
     # via requests
+joblib==1.1.0
+    # via scikit-learn
 numpy==1.22.3
     # via
     #   -r requirements.in
     #   pandas
+    #   scikit-learn
+    #   scipy
 pandas==1.4.2
     # via -r requirements.in
 python-dateutil==2.8.2
-    # via pandas
+    # via
+    #   dateparser
+    #   pandas
 pytz==2022.1
-    # via pandas
+    # via
+    #   dateparser
+    #   pandas
+pytz-deprecation-shim==0.1.0.post0
+    # via tzlocal
+regex==2022.3.2
+    # via dateparser
 requests==2.27.1
     # via -r requirements.in
+scikit-learn==1.0.2
+    # via sklearn
+scipy==1.8.0
+    # via scikit-learn
 six==1.16.0
     # via python-dateutil
+sklearn==0.0
+    # via -r requirements.in
+threadpoolctl==3.1.0
+    # via scikit-learn
 types-requests==2.27.25
     # via -r requirements.in
 types-urllib3==1.26.14
     # via types-requests
+tzdata==2022.1
+    # via pytz-deprecation-shim
+tzlocal==4.2
+    # via dateparser
 urllib3==1.26.9
     # via requests

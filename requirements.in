@@ -2,3 +2,5 @@ types-requests
 requests
 pandas
 numpy
+sklearn
+dateparser
