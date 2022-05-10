@@ -1,5 +1,3 @@
-# python-module-template
-
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/vulogov/nrquery/main.svg)](https://results.pre-commit.ci/latest/github/vulogov/nrquery/main)
@@ -54,6 +52,32 @@ import nrquery
 res = nrquery.Query().Run("SELECT COUNT(*) FROM TransactionError")
 ```
 
+### How to send a multiple queries
+
+You can prepare your nrquery.Query instance to send a multiple queries, then combine result in single DataFrame
+
+```python
+import nrquery
+
+q = nrquery.Query()
+q += "SELECT * FROM TransactionError LIMIT 1"
+q += "SELECT * FROM TransactionError LIMIT 1"
+res = q.Run()
+df = res.Dataframe()
+```
+
+### How to detect a nodes that stop sending data (NODATA() nodes).
+
+There is a special method for nrquery.Query.Deadnodes. This method takes a date query as a partameter. Date query could be in a form of "May 9, 2022" or "1 day ago" or "05-09-2022" and that dat is cut-off date for detection of dead nodes.
+
+```python
+import nrquery
+
+q = nrquery.Query()
+res = q.Deadnodes("1 hour ago")
+```
+This request will return result with list of the nodes stop sending data 1 hour ago.
+
 ## Result class
 
 You shall not directly create instances of the nrquery.Result class. Method Run of the class nrquery.Query will return an instance of the Result class. There are few class variables that can pose some interest:
@@ -76,3 +100,7 @@ import nrquery
 res = nrquery.Query().Run("SELECT * FROM TransactionError")
 df = res.Dataframe()
 ```
+
+### nrquery.Result.Deadnodes
+
+This merhod returns the list of nodes that been prepared by nrquery.Query.Deadnodes
