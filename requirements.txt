@@ -39,7 +39,9 @@ requests==2.27.1
 scikit-learn==1.0.2
     # via sklearn
 scipy==1.8.0
-    # via scikit-learn
+    # via
+    #   -r requirements.in
+    #   scikit-learn
 six==1.16.0
     # via python-dateutil
 sklearn==0.0

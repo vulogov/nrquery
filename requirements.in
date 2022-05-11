@@ -3,4 +3,5 @@ requests
 pandas
 numpy
 sklearn
+scipy
 dateparser

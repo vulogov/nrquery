@@ -6,6 +6,8 @@ import requests
 import datetime
 import dateparser
 import pandas as pd
+import numpy as np
+from scipy.stats import norm
 from typing import Any
 
 GQLAPI = "https://api.newrelic.com/graphql"
@@ -62,6 +64,22 @@ ALQ = """
 }
 """
 
+NAMQ = """
+{
+  actor {
+    entitySearch(query: "accountId = %s and domain = 'INFRA' and type = 'HOST'  and tags.hostname = '%s'") {
+      results {
+        entities {
+          name
+          guid
+          accountId
+        }
+      }
+    }
+  }
+}
+"""
+
 
 class NREnvError(Exception):
     pass
@@ -91,6 +109,178 @@ def np_normalize(arr, t_min, t_max):
         temp = (((i - min(arr)) * diff) / diff_arr) + t_min
         norm_arr.append(temp)
     return norm_arr
+
+
+def np_norm(arr):
+    return np_normalize(arr, 0, 1)
+
+
+class WhereClause:
+    def Since(self, s):
+        return " SINCE %s" % s
+
+    def LimitMax(self):
+        return " LIMIT MAX"
+
+
+class QueryGenerator(WhereClause):
+    def __init__(self, source):
+        self.SOURCE = source
+
+    def SampleOf(self, name):
+        return "SELECT `%s` FROM %s WHERE entity.guid = '%s'" % (
+            name,
+            self.SOURCE,
+            self.Host.GUID,
+        )
+
+
+class Host:
+    def __init__(self, name: str, account: str = None, api_key: str = None):
+        self.NRACCOUNT = get_env_data("NRACCOUNT", account)
+        self.NRAPIKEY = get_env_data("NRAPIKEY", api_key)
+        self.NAME = name
+        q = Query(self.NRACCOUNT, self.NRAPIKEY)
+        res = q.ExecuteRaw(NAMQ % (self.NRACCOUNT, name))
+        if not res.IsSuccess:
+            self.IsSuccess = False
+            return
+        jres = res.RawJson()
+        acc = []
+        try:
+            acc = jres["data"]["actor"]["entitySearch"]["results"]["entities"]
+            self.IsSuccess = True
+        except KeyError:
+            self.IsSuccess = False
+        if len(acc) == 1:
+            self.GUID = acc[0]["guid"]
+        else:
+            self.GUID = None
+            self.IsSuccess = False
+
+    def Metric(self):
+        return Metric(self)
+
+
+class SampleConvert:
+    def to_numpy(self):
+        data = {}
+        for i in self.Name:
+            v = self.Value[i].to_numpy()
+            data[i] = v
+        return data
+
+
+class CalculateWeight:
+    def linear(self, data):
+        res = {}
+        for k in data.keys():
+            res[k] = np.ones(len(data[k]))
+        return res
+
+    def exponential(self, data):
+        res = {}
+        for k in data.keys():
+            res[k] = np_norm(np.exp(np.arange(len(data[k]))))
+        return res
+
+    def log(self, data):
+        res = {}
+        for k in data.keys():
+            res[k] = np_norm(np.log(np.arange(1.0, len(data[k]) + 1)))
+        return res
+
+    def bellcurve(self, data):
+        res = {}
+        for k in data.keys():
+            wa = np.arange(-(len(data[k]) / 2), len(data[k]) / 2, 1)
+            res[k] = np_norm(norm.pdf(wa, 0, 1))
+        return res
+
+
+class SampleStatistics(CalculateWeight):
+    def apply0(self, fun, data):
+        res = {}
+        for k in data.keys():
+            res[k] = fun(data[k])
+        return res
+
+    def applyw(self, fun, model, data):
+        res = {}
+        if model == "linear":
+            w = self.linear(data)
+        elif model == "exponential":
+            w = self.exponential(data)
+        elif model == "log":
+            w = self.log(data)
+        elif model == "bellcurve":
+            w = self.bellcurve(data)
+        else:
+            w = self.linear(data)
+        for k in data.keys():
+            res[k] = fun(data[k], weights=w[k])
+        return res
+
+    def Sum(self):
+        return self.apply0(np.sum, self.to_numpy())
+
+    def Prod(self):
+        return self.apply0(np.prod, self.to_numpy())
+
+    def Floor(self):
+        return self.apply0(np.floor, self.to_numpy())
+
+    def Gradient(self):
+        return self.apply0(np.gradient, self.to_numpy())
+
+    def Min(self):
+        return self.apply0(np.nanmin, self.to_numpy())
+
+    def Max(self):
+        return self.apply0(np.nanmax, self.to_numpy())
+
+    def Normalize(self):
+        return self.apply0(np_norm, self.to_numpy())
+
+    def Avg(self, model="linear"):
+        return self.applyw(np.ma.average, model, self.to_numpy())
+
+
+class Sample(SampleStatistics, SampleConvert):
+    def __init__(self, metric_name, host, metric, df):
+        self.Name = [metric_name]
+        self.Host = host
+        self.Metric = metric
+        self.Value = df
+
+    def __repr__(self):
+        return str(self.Value)
+
+
+class Metric(QueryGenerator):
+    def __init__(self, host):
+        self.Host = host
+        self.IsSuccess = host.IsSuccess
+        QueryGenerator.__init__(self, "Metric")
+
+    def Query(self, query):
+        print(query)
+        q = Query(self.Host.NRACCOUNT, self.Host.NRAPIKEY)
+        res = q.Execute(query).Dataframe()
+        del res["datetime"]
+        del res["timestamp"]
+        return res
+
+    def Sample(self, metric, *clauses):
+        c = " "
+        for i in clauses:
+            c += " " + i
+        return Sample(
+            metric,
+            self.Host,
+            self,
+            self.Query(self.SampleOf(metric) + c + self.LimitMax()),
+        )
 
 
 class Query:
@@ -234,6 +424,14 @@ class Result:
             raise NRResultError("Query: %s returned no useful result" % self.Query)
         raise NRResultError("Query: %s returned failure" % self.Query)
 
+    def RawJson(self) -> Any:
+        try:
+            if self.IsSuccess:
+                return self.Value.json()
+        except KeyError:
+            raise NRResultError("Query: %s returned no useful result" % self.Query)
+        raise NRResultError("Query: %s returned failure" % self.Query)
+
     def Series(self) -> Any:
         v = self.Json()
         if self.IsSuccess and len(v) == 1 and isinstance(v[0], dict):
@@ -251,7 +449,7 @@ class Result:
                     else:
                         ix.append(None)
                 res = pd.DataFrame(v, index=ix)
-            if "beginTimeSeconds" in v[0] and "endTimeSeconds" in v[0]:
+            elif "beginTimeSeconds" in v[0] and "endTimeSeconds" in v[0]:
                 ix = []
                 for e in v:
                     if "beginTimeSeconds" in e and "endTimeSeconds" in e:
