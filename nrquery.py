@@ -7,6 +7,10 @@ import datetime
 import dateparser
 import pandas as pd
 import numpy as np
+
+#
+# from statsmodels.stats.weightstats import DescrStatsW
+#
 from scipy.stats import norm
 from typing import Any
 
@@ -223,6 +227,22 @@ class SampleStatistics(CalculateWeight):
             res[k] = fun(data[k], weights=w[k])
         return res
 
+    def prepare_to_apply(self, model, data):
+        res = {}
+        if model == "linear":
+            w = self.linear(data)
+        elif model == "exponential":
+            w = self.exponential(data)
+        elif model == "log":
+            w = self.log(data)
+        elif model == "bellcurve":
+            w = self.bellcurve(data)
+        else:
+            w = self.linear(data)
+        for k in data.keys():
+            res[k] = (data[k], w[k])
+        return res
+
     def Sum(self):
         return self.apply0(np.sum, self.to_numpy())
 
@@ -254,6 +274,14 @@ class Sample(SampleStatistics, SampleConvert):
         self.Host = host
         self.Metric = metric
         self.Value = df
+
+    def Resample(self, n):
+        c = 1
+        while True:
+            if c > 525960 or len(self.Value) < (n + 1):
+                break
+            self.Value = self.Value.resample("%dMin" % c).mean()
+            c += 1
 
     def __repr__(self):
         return str(self.Value)
