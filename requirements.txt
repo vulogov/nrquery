@@ -18,10 +18,20 @@ numpy==1.22.3
     # via
     #   -r requirements.in
     #   pandas
+    #   patsy
     #   scikit-learn
     #   scipy
+    #   statsmodels
+packaging==21.3
+    # via statsmodels
 pandas==1.4.2
-    # via -r requirements.in
+    # via
+    #   -r requirements.in
+    #   statsmodels
+patsy==0.5.2
+    # via statsmodels
+pyparsing==3.0.9
+    # via packaging
 python-dateutil==2.8.2
     # via
     #   dateparser
@@ -42,9 +52,14 @@ scipy==1.8.0
     # via
     #   -r requirements.in
     #   scikit-learn
+    #   statsmodels
 six==1.16.0
-    # via python-dateutil
+    # via
+    #   patsy
+    #   python-dateutil
 sklearn==0.0
+    # via -r requirements.in
+statsmodels==0.13.2
     # via -r requirements.in
 threadpoolctl==3.1.0
     # via scikit-learn
