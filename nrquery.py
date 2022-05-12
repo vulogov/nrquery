@@ -182,12 +182,14 @@ class CalculateWeight:
         res = {}
         for k in data.keys():
             res[k] = np_norm(np.exp(np.arange(len(data[k]))))
+            res[k] = res[k][::-1]
         return res
 
     def log(self, data):
         res = {}
         for k in data.keys():
             res[k] = np_norm(np.log(np.arange(1.0, len(data[k]) + 1)))
+            res[k] = res[k][::-1]
         return res
 
     def bellcurve(self, data):
