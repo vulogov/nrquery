@@ -11,6 +11,7 @@ import numpy as np
 #
 # from statsmodels.stats.weightstats import DescrStatsW
 #
+from sklearn.ensemble import RandomForestClassifier
 from scipy.stats import norm
 from typing import Any
 
@@ -117,6 +118,78 @@ def np_normalize(arr, t_min, t_max):
 
 def np_norm(arr):
     return np_normalize(arr, 0, 1)
+
+
+class LoadTrainingData:
+    def loadSingleDataset(self, fn, y):
+        data = np.loadtxt(fn, delimiter=",")
+        res = []
+        if len(data) == 0:
+            return [], []
+        if isinstance(data[0], np.ndarray):
+            for r in data:
+                res.append(np_norm(list(r)))
+            return res, len(res) * [y]
+        elif isinstance(data[0], float):
+            return [np_norm(list(data))], [y]
+        return [], []
+
+    def loadTrainingData(
+        self,
+        flat="./examples/csv/flat.csv",
+        up="./examples/csv/up.csv",
+        down="./examples/csv/down.csv",
+        bellup="./examples/csv/bellup.csv",
+        belldown="././examples/csv/belldown.csv",
+    ):
+        x, Y = self.loadSingleDataset(flat, [1.0, 0.0, 0.0, 0.0, 0.0])
+        _x, _Y = self.loadSingleDataset(up, [0.0, 1.0, 0.0, 0.0, 0.0])
+        x += _x
+        Y += _Y
+        _x, _Y = self.loadSingleDataset(down, [0.0, 0.0, 1.0, 0.0, 0.0])
+        x += _x
+        Y += _Y
+        _x, _Y = self.loadSingleDataset(bellup, [0.0, 0.0, 0.0, 1.0, 0.0])
+        x += _x
+        Y += _Y
+        _x, _Y = self.loadSingleDataset(belldown, [0.0, 0.0, 0.0, 0.0, 1.0])
+        x += _x
+        Y += _Y
+        return x, Y
+
+
+class Classifier(LoadTrainingData):
+    def LoadTrainigData(
+        self,
+        flat="./examples/csv/flat.csv",
+        up="./examples/csv/up.csv",
+        down="./examples/csv/down.csv",
+        bellup="./examples/csv/bellup.csv",
+        belldown="././examples/csv/belldown.csv",
+    ):
+        self.x, self.Y = self.loadTrainingData(flat, up, down, bellup, belldown)
+        return self.x, self.Y
+
+    def runPrediction(self, classifier, data):
+        if classifier is None:
+            classifier = RandomForestClassifier(random_state=0, verbose=False)
+            classifier.fit(self.x, self.Y)
+        return classifier.predict([data])
+
+    def Predict(self):
+        res = {}
+        self.Resample(16)
+        classifier = RandomForestClassifier(random_state=0, verbose=False)
+        try:
+            classifier.fit(self.x, self.Y)
+        except ValueError:
+            return None
+        for k in self.Name:
+            v = np_norm(list(self.Value[k]))
+            if len(v) != 16:
+                v.append(0.0)
+            res[k] = self.runPrediction(classifier, v)
+        return res
 
 
 class WhereClause:
@@ -268,7 +341,7 @@ class SampleStatistics(CalculateWeight):
         return self.applyw(np.ma.average, model, self.to_numpy())
 
 
-class Sample(SampleStatistics, SampleConvert):
+class Sample(SampleStatistics, SampleConvert, Classifier):
     def __init__(self, metric_name, host, metric, df):
         self.Name = [metric_name]
         self.Host = host
@@ -309,7 +382,7 @@ class Metric(QueryGenerator):
             metric,
             self.Host,
             self,
-            self.Query(self.SampleOf(metric) + c + self.LimitMax()),
+            self.Query(self.SampleOf(metric) + c),
         )
 
 
