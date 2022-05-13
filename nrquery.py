@@ -197,7 +197,15 @@ class Classifier(LoadTrainingData):
             v = np_norm(list(self.Value[k]))
             if len(v) != 16:
                 v.append(0.0)
-            res[k] = self.runPrediction(classifier, v)
+            p = list(self.runPrediction(classifier, v)[0])
+            pdict = {
+                "flat": p[0],
+                "up": p[1],
+                "down": p[2],
+                "bellcurveup": p[3],
+                "bellcurvedown": p[4],
+            }
+            res[k] = pdict
         return res
 
 
@@ -376,7 +384,6 @@ class Metric(QueryGenerator):
         QueryGenerator.__init__(self, "Metric")
 
     def Query(self, query):
-        print(query)
         q = Query(self.Host.NRACCOUNT, self.Host.NRAPIKEY)
         res = q.Execute(query).Dataframe()
         del res["datetime"]
