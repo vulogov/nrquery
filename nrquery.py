@@ -12,6 +12,7 @@ import numpy as np
 # from statsmodels.stats.weightstats import DescrStatsW
 #
 from sklearn.ensemble import RandomForestClassifier
+from scipy.signal import savgol_filter
 from scipy.stats import norm
 from typing import Any
 
@@ -120,6 +121,10 @@ def np_norm(arr):
     return np_normalize(arr, 0, 1)
 
 
+def smooth(arr):
+    return savgol_filter(arr, len(arr), 3)
+
+
 class LoadTrainingData:
     def loadSingleDataset(self, fn, y):
         data = np.loadtxt(fn, delimiter=",")
@@ -178,6 +183,10 @@ class Classifier(LoadTrainingData):
 
     def Predict(self):
         res = {}
+        for k in self.Name:
+            v = self.Value[k]
+            v = smooth(v)
+            self.Value[k] = v
         self.Resample(16)
         classifier = RandomForestClassifier(random_state=0, verbose=False)
         try:
